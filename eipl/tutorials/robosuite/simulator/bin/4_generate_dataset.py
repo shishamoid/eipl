@@ -14,7 +14,7 @@ def load_data(index, data_dir, train):
     joint_list = []
     pose_list = []
 
-    num_list = [1, 2, 3, 4, 5] if train else [6, 7]
+    num_list = [1, 2, 3, 4] 
     for h in index:
         for i in num_list:
             filename = data_dir.format(h, i)
