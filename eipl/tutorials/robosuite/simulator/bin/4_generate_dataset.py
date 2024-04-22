@@ -54,7 +54,7 @@ if __name__ == "__main__":
     data_dir = "./data/raw_data/Pos{}_{}/state_resave.npz"
 
     # load train data
-    train_index = [1, 3, 5, 7, 9]
+    train_index = [2, 4, 6]
     train_images, train_joints, train_poses = load_data(
         train_index, data_dir, train=True
     )
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     np.save("./data/train/joints.npy", train_joints.astype(np.float32))
     np.save("./data/train/poses.npy", train_poses.astype(np.float32))
 
-    test_index = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    test_index = [3,5]
     test_images, test_joints, test_poses = load_data(test_index, data_dir, train=False)
     np.save("./data/test/images.npy", test_images.astype(np.uint8))
     np.save("./data/test/joints.npy", test_joints.astype(np.float32))
