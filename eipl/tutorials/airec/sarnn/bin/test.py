@@ -15,6 +15,9 @@ from eipl.data import SampleDownloader, WeightDownloader
 from eipl.model import SARNN
 from eipl.utils import normalization
 from eipl.utils import restore_args, tensor2numpy, deprocess_img, resize_img
+from matplotlib.pyplot import figure
+
+#figure(figsize=(12, 9), dpi=200)
 
 
 # argument parser
@@ -73,7 +76,7 @@ model.load_state_dict(ckpt["model_state_dict"])
 model.eval()
 
 # Inference
-img_size = 128
+img_size = 64
 image_list, joint_list = [], []
 ect_pts_list, dec_pts_list = [], []
 state = None
@@ -127,7 +130,7 @@ dec_pts = np.clip(dec_pts, 0, img_size)
 
 # plot images
 T = len(images)
-fig, ax = plt.subplots(1, 3, figsize=(12, 5), dpi=60)
+fig, ax = plt.subplots(1, 3, figsize=(40, 8), dpi=60)
 
 
 def anim_update(i):
