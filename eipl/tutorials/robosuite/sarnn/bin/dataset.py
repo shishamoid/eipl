@@ -8,19 +8,16 @@ from tqdm import tqdm
 
 import torch.nn as nn
 import numpy as np
+import cv2
 
-def make_data(data_directory):
-    data_dir = sim_framework_path("environments/dataset/data/aligning/all_data")
+def make_data(data_directory,device = "cuda:1"):
     state_files = np.load(sim_framework_path(data_directory), allow_pickle=True)
-
+    path = "/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/all_data"
     bp_cam_imgs = []
-    
     robot_joint_state_list = [] 
-    print(len(state_files))
 
     for file in tqdm(state_files[:3]):
-
-        with open(os.path.join(data_dir, 'state', file), 'rb') as f:
+        with open(os.path.join(path, 'state', file), 'rb') as f:
             env_state = pickle.load(f)
 
         #関節角度追加
@@ -30,14 +27,14 @@ def make_data(data_directory):
         file_name = os.path.basename(file).split('.')[0]
 
         bp_images = []
-        bp_imgs = glob.glob(data_dir + '/images/bp-cam/' + file_name + '/*')
+        bp_imgs = glob.glob(path+ '/images/bp-cam/' + file_name + '/*')
         bp_imgs.sort(key=lambda x: int(os.path.basename(x).split('.')[0]))
 
         for img in bp_imgs:
             image = cv2.imread(img).astype(np.float32)
             image = image.transpose((2, 0, 1)) / 255.
 
-            image = torch.from_numpy(image).to(self.device).float().unsqueeze(0)
+            image = torch.from_numpy(image).to(device).float().unsqueeze(0)
 
             bp_images.append(image)
 

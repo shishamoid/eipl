@@ -27,6 +27,8 @@ import glob
 import cv2
 import pickle
 import torch.nn as nn
+from sim_path import sim_framework_path
+from dataset import make_data
 
 # argument parser
 parser = argparse.ArgumentParser(
@@ -77,54 +79,8 @@ joints = normalization(joints_raw, joint_bounds, minmax)
 
 #0819追加
 #画像
-data_dir = "/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/all_data/"
-bp_images = []
-bp_imgs = glob.glob(data_dir + 'images/bp-cam/*/*.jpg')
-data_length = 10
-#bp_imgs.sort(key=lambda x: int(os.path.basename(x).split('.')[0]))
-
-counter = 0
-for img in bp_imgs:
-    counter +=1
-    if counter ==data_length:
-        print("img",img)
-        break
-    image = cv2.imread(img).astype(np.float32)
-    image = image.transpose((2, 0, 1)) / 255.
-
-    #image = torch.from_numpy(image).to(device).float().unsqueeze(0)
-
-    bp_images.append(image)
-
-
-#関節角度
-state_list = glob.glob(data_dir+"state/*.pkl")
-print(len(state_list))
-robot_state_list = []
-
-for i in range(len(state_list)):
-    path = state_list[i]
-    if i == data_length:
-        break
-    with open(path, 'rb') as f:
-        env_state = pickle.load(f)
-        robot_joint_state = torch.from_numpy(env_state['robot']['j_pos'])
-    robot_state_list.append(robot_joint_state)
-
-print(len(robot_state_list))
-
-print("Dataset Loaded!!")
-print("bp_images",len(bp_images))
-print("robot_state_list",len(robot_state_list))
-#assert False
-
-
-#長さが違うので0padding
-#self.data_length = 
-a = nn.utils.rnn.pack_sequence(robot_state_list, enforce_sorted=False)
-robot_state_list, _ = nn.utils.rnn.pad_packed_sequence(a,batch_first =True,padding_value=0)
-
-train_dataset = MultimodalDataset(bp_images, robot_state_list, device=device, stdev=stdev)
+train_img,train_joint = make_data("/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/train_files.pkl",device=device)
+train_dataset = MultimodalDataset(train_img, train_joint, device=device, stdev=None)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
     batch_size=args.batch_size,
@@ -132,6 +88,7 @@ train_loader = torch.utils.data.DataLoader(
     drop_last=False,
 )
 
+"""
 images_raw = np.load("../simulator/data/test/images.npy")
 joints_raw = np.load("../simulator/data/test/joints.npy")
 images = normalization(images_raw.transpose(0, 1, 4, 2, 3), (0, 255), minmax)
@@ -143,6 +100,7 @@ test_loader = torch.utils.data.DataLoader(
     shuffle=True,
     drop_last=False,
 )
+"""
 
 # define model
 model = SARNN(
@@ -151,7 +109,7 @@ model = SARNN(
     k_dim=args.k_dim,
     heatmap_size=args.heatmap_size,
     temperature=args.temperature,
-    im_size=[64, 64],
+    im_size=[96, 96],
 )
 
 # torch.compile makes PyTorch code run faster
