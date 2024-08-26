@@ -36,7 +36,7 @@ class SARNN(nn.Module):
         temperature=1e-4,
         heatmap_size=0.1,
         kernel_size=3,
-        im_size=[64, 64],
+        im_size=[96, 96],
     ):
         super(SARNN, self).__init__()
 
@@ -96,7 +96,7 @@ class SARNN(nn.Module):
             heatmap_size=self.heatmap_size,
             normalized=True,
         )
-
+            
         # Image Decoder
         self.decoder_image = nn.Sequential(
             nn.ConvTranspose2d(

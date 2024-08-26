@@ -40,7 +40,7 @@ model = SARNN(
     k_dim=params["k_dim"],
     heatmap_size=params["heatmap_size"],
     temperature=params["temperature"],
-    im_size=[64, 64],
+    im_size=[96, 96],
 )
 
 if params["compile"]:

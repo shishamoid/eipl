@@ -78,11 +78,21 @@ joints = normalization(joints_raw, joint_bounds, minmax)
 """
 
 #0819追加
-#画像
+#train
 train_img,train_joint = make_data("/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/train_files.pkl",device=device)
-train_dataset = MultimodalDataset(train_img, train_joint, device=device, stdev=None)
+train_dataset = MultimodalDataset(train_img, train_joint.to(torch.float32), device=device, stdev=None)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
+    batch_size=args.batch_size,
+    shuffle=True,
+    drop_last=False,
+)
+
+#test
+eval_img,eval_joint = make_data("/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/eval_files.pkl",device=device)
+eval_dataset = MultimodalDataset(eval_img, eval_joint.to(torch.float32), device=device, stdev=None)
+test_loader = torch.utils.data.DataLoader(
+    eval_dataset,
     batch_size=args.batch_size,
     shuffle=True,
     drop_last=False,
@@ -105,7 +115,7 @@ test_loader = torch.utils.data.DataLoader(
 # define model
 model = SARNN(
     rec_dim=args.rec_dim,
-    joint_dim=8,
+    joint_dim=7, #変更
     k_dim=args.k_dim,
     heatmap_size=args.heatmap_size,
     temperature=args.temperature,
