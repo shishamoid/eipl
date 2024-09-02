@@ -10,9 +10,9 @@ import torch.nn as nn
 import numpy as np
 import cv2
 
-def make_data(data_directory,device = "cuda:1"):
+def make_data(path,data_directory,device = "cuda:1"):
     state_files = np.load(sim_framework_path(data_directory), allow_pickle=True)
-    path = "/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/all_data"
+    path = path + "all_data"
     bp_cam_imgs = []
     robot_joint_state_list = [] 
 

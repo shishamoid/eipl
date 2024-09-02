@@ -53,6 +53,7 @@ parser.add_argument("--vmax", type=float, default=1.0)
 parser.add_argument("--device", type=int, default=0)
 parser.add_argument("--compile", action="store_true")
 parser.add_argument("--tag", help="Tag name for snap/log sub directory")
+parser.add_argument("--aist",type=bool,default=True)
 args = parser.parse_args()
 
 # check args
@@ -77,9 +78,17 @@ images = normalization(images_raw.transpose(0, 1, 4, 2, 3), (0, 255), minmax)
 joints = normalization(joints_raw, joint_bounds, minmax)
 """
 
+#リモートワーク用
+if args.aist:
+    path="/home/ito/d3il/environments/dataset/data/aligning/"
+else:
+    path="/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/"
+
+print("path",path)
+#assert False
 #0819追加
 #train
-train_img,train_joint = make_data("/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/train_files.pkl",device=device)
+train_img,train_joint = make_data(path,path+"train_files.pkl",device=device)
 train_dataset = MultimodalDataset(train_img, train_joint.to(torch.float32), device=device, stdev=None)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
@@ -89,7 +98,7 @@ train_loader = torch.utils.data.DataLoader(
 )
 
 #test
-eval_img,eval_joint = make_data("/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/eval_files.pkl",device=device)
+eval_img,eval_joint = make_data(path,path+"eval_files.pkl",device=device)
 eval_dataset = MultimodalDataset(eval_img, eval_joint.to(torch.float32), device=device, stdev=None)
 test_loader = torch.utils.data.DataLoader(
     eval_dataset,
