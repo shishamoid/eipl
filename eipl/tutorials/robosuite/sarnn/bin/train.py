@@ -88,7 +88,8 @@ print("path",path)
 #assert False
 #0819追加
 #train
-train_img,train_joint = make_data(path,path+"train_files.pkl",device=device)
+train_data_volume = 300
+train_img,train_joint = make_data(path,path+"train_files.pkl",train_data_volume,device=device)
 train_dataset = MultimodalDataset(train_img, train_joint.to(torch.float32), device=device, stdev=None)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
@@ -97,8 +98,14 @@ train_loader = torch.utils.data.DataLoader(
     drop_last=False,
 )
 
+print("len(train_img)",len(train_img[0]))
+print("len(train_joint)",len(train_joint[0]))
+print(train_img.shape)
+print(train_joint.shape)
+#assert False
 #test
-eval_img,eval_joint = make_data(path,path+"eval_files.pkl",device=device)
+test_data_volume = 50
+eval_img,eval_joint = make_data(path,path+"eval_files.pkl",test_data_volume,device=device)
 eval_dataset = MultimodalDataset(eval_img, eval_joint.to(torch.float32), device=device, stdev=None)
 test_loader = torch.utils.data.DataLoader(
     eval_dataset,

@@ -22,7 +22,6 @@ joint_bounds = np.load("./data/joint_bounds.npy")
 images = np.load("./data/test/images.npy")
 N = images.shape[1]
 
-
 # normalized joints
 minmax = [0.1, 0.9]
 norm_joints = normalization(joints, joint_bounds, minmax)

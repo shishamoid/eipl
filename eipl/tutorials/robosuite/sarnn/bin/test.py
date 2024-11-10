@@ -27,6 +27,8 @@ dir_name = os.path.split(args.filename)[0]
 params = restore_args(os.path.join(dir_name, "args.json"))
 idx = args.idx
 
+minmax = [params["vmin"], params["vmax"]]
+
 """
 # load dataset
 minmax = [params["vmin"], params["vmax"]]
@@ -41,8 +43,12 @@ joints = joints_raw[idx]
 path="/home/ito/d3il/environments/dataset/data/aligning/"
 #path="/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/"
 device = "cuda:0"
-images,joints = make_data(path,path+"eval_files.pkl",device=device)
+device = "cpu"
+images,joints = make_data(path,path+"eval_files.pkl",100,device=device)
 #images = images_1[0]
+#images = images[0].permute(0,2,3,1)
+
+#print(images.shape)
 #joints = joints_1[0]
 
 # define model
@@ -71,33 +77,26 @@ im_size = 96
 image_list, joint_list = [], []
 ect_pts_list, dec_pts_list = [], []
 state = None
-nloop = len(images)
-for loop_ct in range(nloop):
-    """
-    # load data and normalization
-    img_t = images[loop_ct].transpose(2, 0, 1)
-    img_t = normalization(img_t, (0, 255), minmax)
-    img_t = torch.Tensor(np.expand_dims(img_t, 0))
-    joint_t = normalization(joints[loop_ct], joint_bounds, minmax)
-    joint_t = torch.Tensor(np.expand_dims(joint_t, 0))
-    """
+#nloop = len(images)
+start = 0
+last = 100
+print("imags",images.shape)
+
+for loop_ct in range(start,last):
     img_t = images[loop_ct].to(torch.float32).to(device)
     joint_t = joints[loop_ct].to(torch.float32).to(device)
     # predict rnn
     y_image, y_joint, ect_pts, dec_pts, state = model(img_t, joint_t, state)
-
-    # denormalization
-    pred_image = tensor2numpy(y_image[0].permute(1,2,0))
-    #pred_image = deprocess_img(pred_image, params["vmin"], params["vmax"])
-    #pred_image = pred_image.transpose(1, 2, 0)
-    pred_joint = tensor2numpy(y_joint[0])
+    pred_image = tensor2numpy(y_image[loop_ct].permute(1,2,0))
+    pred_joint = tensor2numpy(y_joint[loop_ct])
+    
     #pred_joint = normalization(pred_joint, minmax, joint_bounds)
 
     # append data
     image_list.append(pred_image)
     joint_list.append(pred_joint)
-    ect_pts_list.append(tensor2numpy(ect_pts[0]))
-    dec_pts_list.append(tensor2numpy(dec_pts[0]))
+    ect_pts_list.append(tensor2numpy(ect_pts[loop_ct]))
+    dec_pts_list.append(tensor2numpy(dec_pts[loop_ct]))
 
     print("loop_ct:{}, joint:{}".format(loop_ct, pred_joint))
 
@@ -114,24 +113,18 @@ dec_pts = np.clip(dec_pts, 0, im_size)
 
 
 # plot images
-T = len(images)
-fig, ax = plt.subplots(1, 3, figsize=(14, 6), dpi=60)
+T = len(images[0])
+T = 50
 
-print("---------------")
-print("image_list",len(image_list))
-print("image_list[0]",len(image_list[0]))
-print("pred images",len(pred_image))
-print("pred images[0]",len(pred_image[0]))
-print("images",len(images))
-print("images[0]",len(images[0]))
+fig, ax = plt.subplots(1, 3, figsize=(14, 6), dpi=60)
 
 def anim_update(i):
     for j in range(3):
         ax[j].cla()
 
-    # plot camera image
-    print("images",images[i].shape)
-    ax[0].imshow(images[i][0].permute(1,2,0).to('cpu').detach().numpy().copy())
+    image_show = normalization(images[0][i], (0, 255), minmax)
+    ax[0].imshow(image_show.permute(1,2,0).to('cpu').detach().numpy().copy())
+
     for j in range(params["k_dim"]):
         ax[0].plot(ect_pts[i, j, 0], ect_pts[i, j, 1], "co", markersize=12)  # encoder
         ax[0].plot(
@@ -159,7 +152,7 @@ def anim_update(i):
     plt.subplots_adjust(left=0.01, right=0.98, bottom=0.12, top=0.9)
 
 
-ani = anim.FuncAnimation(fig, anim_update, interval=int(np.ceil(T / 10)), frames=T)
+ani = anim.FuncAnimation(fig, anim_update, interval=int(np.ceil(T / 100)), frames=last-start)
 #print(ani.shape)
 ani.save("./output/SARNN_{}_{}.gif".format(params["tag"], idx))
 
