@@ -29,29 +29,16 @@ idx = args.idx
 
 minmax = [params["vmin"], params["vmax"]]
 
-"""
-# load dataset
-minmax = [params["vmin"], params["vmax"]]
-images_raw = np.load("../simulator/data/test/images.npy")
-joints_raw = np.load("../simulator/data/test/joints.npy")
-joint_bounds = np.load("../simulator/data/joint_bounds.npy")
-images = images_raw[idx]
-joints = joints_raw[idx]
-"""
-
 #リモートワーク用
 path="/home/ito/d3il/environments/dataset/data/aligning/"
 #path="/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/"
 device = "cuda:0"
-#device = "cpu"
+device = "cpu"
 #images,joints = make_data(path,path+"eval_files.pkl",100,device=device)
-images,joints = make_data(path,path+"eval_files.pkl",40,device=device)
+images_1,joints_1 = make_data(path,path+"eval_files.pkl",40,device=device)
 
-images = images_1[0]
-#images = images[0].permute(0,2,3,1)
-
-#print(images.shape)
-joints = joints_1[0]
+images = images_1[9]
+joints = joints_1[9]
 
 # define model
 model = SARNN(
@@ -81,26 +68,31 @@ ect_pts_list, dec_pts_list = [], []
 state = None
 #nloop = len(images)
 start = 0
-last = 50
-print("imags",images.shape)
+last = 150
+print("----------------")
+print("images",images.shape)
+
 
 for loop_ct in range(start,last):
-    img_t = images[loop_ct].to(torch.float32).to(device)
-    joint_t = joints[loop_ct].to(torch.float32).to(device)
+    img_t = images[loop_ct].to(torch.float32).to(device).unsqueeze(dim=0)
+    joint_t = joints[loop_ct].to(torch.float32).to(device).unsqueeze(dim=0)
     # predict rnn
     y_image, y_joint, ect_pts, dec_pts, state = model(img_t, joint_t, state)
-    pred_image = tensor2numpy(y_image[loop_ct].permute(1,2,0))
-    pred_joint = tensor2numpy(y_joint[loop_ct])
+    #print("y_image.shape",y_image.shape) #[1,3,96,96]
+    #print
+
+    pred_image = tensor2numpy(y_image[0].permute(1,2,0))
+    pred_joint = tensor2numpy(y_joint[0])
     
     #pred_joint = normalization(pred_joint, minmax, joint_bounds)
 
     # append data
     image_list.append(pred_image)
     joint_list.append(pred_joint)
-    ect_pts_list.append(tensor2numpy(ect_pts[loop_ct]))
-    dec_pts_list.append(tensor2numpy(dec_pts[loop_ct]))
+    ect_pts_list.append(tensor2numpy(ect_pts[0]))
+    dec_pts_list.append(tensor2numpy(dec_pts[0]))
 
-    print("loop_ct:{}, joint:{}".format(loop_ct, pred_joint))
+    #print("loop_ct:{}, joint:{}".format(loop_ct, pred_joint))
 
 pred_image = np.array(image_list)
 pred_joint = np.array(joint_list)
@@ -115,8 +107,8 @@ dec_pts = np.clip(dec_pts, 0, im_size)
 
 
 # plot images
-T = len(images[0])
-T = 50
+#T = len(images)
+T = last-start
 
 fig, ax = plt.subplots(1, 3, figsize=(14, 6), dpi=60)
 
@@ -124,8 +116,8 @@ def anim_update(i):
     for j in range(3):
         ax[j].cla()
 
-    image_show = normalization(images[0][i], (0, 255), minmax)
-    ax[0].imshow(image_show.permute(1,2,0).to('cpu').detach().numpy().copy())
+    # plot camera image
+    ax[0].imshow(images[i].permute(1,2,0).to('cpu').detach().numpy().copy()*0.5+0.5)
 
     for j in range(params["k_dim"]):
         ax[0].plot(ect_pts[i, j, 0], ect_pts[i, j, 1], "co", markersize=12)  # encoder
@@ -136,15 +128,16 @@ def anim_update(i):
     ax[0].set_title("Input image", fontsize=20)
 
     # plot predicted image
-    ax[1].imshow(pred_image[i])
+    ax[1].imshow(pred_image[i]*0.3+0.5)
     ax[1].axis("off")
     ax[1].set_title("Predicted image", fontsize=20)
 
     # plot joint angle
     ax[2].set_ylim(-np.pi, 3.4)
     ax[2].set_xlim(0, T)
-    ax[2].plot(joints[1:][0], linestyle="dashed", c="k")
+    ax[2].plot(joints[1:], linestyle="dashed", c="k")
     # om has 5 joints, not 8
+    
     for joint_idx in range(7):
         ax[2].plot(np.arange(i + 1), pred_joint[: i + 1, joint_idx])
     ax[2].set_xlabel("Step", fontsize=20)
@@ -154,7 +147,7 @@ def anim_update(i):
     plt.subplots_adjust(left=0.01, right=0.98, bottom=0.12, top=0.9)
 
 
-ani = anim.FuncAnimation(fig, anim_update, interval=int(np.ceil(T / 100)), frames=last-start)
+ani = anim.FuncAnimation(fig, anim_update, interval=int(np.ceil(T / 1000)), frames=T)
 #print(ani.shape)
 ani.save("./output/SARNN_{}_{}.gif".format(params["tag"], idx))
 

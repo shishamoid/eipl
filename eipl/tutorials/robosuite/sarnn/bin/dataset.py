@@ -28,7 +28,9 @@ def make_data(path,data_directory,data_volume,device = "cuda:1"):
 
         bp_images = []
         bp_imgs = glob.glob(path+ '/images/bp-cam/' + file_name + '/*')
-        #bp_imgs.sort(key=lambda x: int(os.path.basename(x).split('.')[0]))
+        
+        #assert False
+        bp_imgs.sort(key=lambda x: int(os.path.basename(x).split('.')[0]))
 
         for img in bp_imgs:
             image = cv2.imread(img).astype(np.float32)
