@@ -43,13 +43,15 @@ joints = joints_raw[idx]
 path="/home/ito/d3il/environments/dataset/data/aligning/"
 #path="/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/"
 device = "cuda:0"
-device = "cpu"
-images,joints = make_data(path,path+"eval_files.pkl",100,device=device)
-#images = images_1[0]
+#device = "cpu"
+#images,joints = make_data(path,path+"eval_files.pkl",100,device=device)
+images,joints = make_data(path,path+"eval_files.pkl",40,device=device)
+
+images = images_1[0]
 #images = images[0].permute(0,2,3,1)
 
 #print(images.shape)
-#joints = joints_1[0]
+joints = joints_1[0]
 
 # define model
 model = SARNN(
@@ -79,7 +81,7 @@ ect_pts_list, dec_pts_list = [], []
 state = None
 #nloop = len(images)
 start = 0
-last = 100
+last = 50
 print("imags",images.shape)
 
 for loop_ct in range(start,last):
