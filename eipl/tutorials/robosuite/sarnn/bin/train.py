@@ -53,6 +53,8 @@ parser.add_argument("--vmax", type=float, default=1.0)
 parser.add_argument("--device", type=int, default=0)
 parser.add_argument("--compile", action="store_true")
 parser.add_argument("--tag", help="Tag name for snap/log sub directory")
+parser.add_argument("--task", help="task")
+parser.add_argument("--train_data_volume",type=int, help="task")
 parser.add_argument("--aist",type=bool,default=True)
 args = parser.parse_args()
 
@@ -77,19 +79,19 @@ joint_bounds = np.load("../simulator/data/joint_bounds.npy")
 images = normalization(images_raw.transpose(0, 1, 4, 2, 3), (0, 255), minmax)
 joints = normalization(joints_raw, joint_bounds, minmax)
 """
-
+task = args.task
 #リモートワーク用
 if args.aist:
-    path="/home/ito/d3il/environments/dataset/data/aligning/"
+    path="/home/ito/d3il/environments/dataset/data/{}/".format(task)
 else:
-    path="/home/ogata/workspace/ito/d3il/environments/dataset/data/aligning/"
+    path="/home/ogata/workspace/ito/d3il/environments/dataset/data/{}/".format(task)
 
 print("path",path)
 #assert False
 #0819追加
 #train
-train_data_volume = 300
-train_img,train_joint = make_data(path,path+"train_files.pkl",train_data_volume,device=device)
+train_data_volume = int(args.train_data_volume)
+train_img,train_joint = make_data(path,path+"train_files.pkl",train_data_volume,task,device=device)
 train_dataset = MultimodalDataset(train_img, train_joint.to(torch.float32), device=device, stdev=None)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
@@ -104,8 +106,8 @@ print(train_img.shape)
 print(train_joint.shape)
 #assert False
 #test
-test_data_volume = 50
-eval_img,eval_joint = make_data(path,path+"eval_files.pkl",test_data_volume,device=device)
+test_data_volume = 10
+eval_img,eval_joint = make_data(path,path+"eval_files.pkl",test_data_volume,task,device=device)
 eval_dataset = MultimodalDataset(eval_img, eval_joint.to(torch.float32), device=device, stdev=None)
 test_loader = torch.utils.data.DataLoader(
     eval_dataset,
@@ -113,6 +115,10 @@ test_loader = torch.utils.data.DataLoader(
     shuffle=True,
     drop_last=False,
 )
+print("len(train_img)",len(eval_img[0]))
+print("len(train_joint)",len(eval_joint[0]))
+print(eval_img.shape)
+print(eval_joint.shape)
 
 """
 images_raw = np.load("../simulator/data/test/images.npy")
@@ -151,7 +157,7 @@ loss_weights = [args.img_loss, args.joint_loss, args.pt_loss]
 trainer = fullBPTTtrainer(model, optimizer, loss_weights=loss_weights, device=device)
 
 ### training main
-log_dir_path = set_logdir("./" + args.log_dir, args.tag)
+log_dir_path = set_logdir("./" + args.log_dir, task)
 save_name = os.path.join(log_dir_path, "SARNN.pth")
 writer = SummaryWriter(log_dir=log_dir_path, flush_secs=30)
 early_stop = EarlyStopping(patience=1000)

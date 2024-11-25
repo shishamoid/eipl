@@ -10,24 +10,79 @@ import torch.nn as nn
 import numpy as np
 import cv2
 
-def make_data(path,data_directory,data_volume,device = "cuda:1"):
-    state_files = np.load(sim_framework_path(data_directory), allow_pickle=True)
-    path = path + "all_data"
+def make_data(path,data_directory,data_volume,task,device = "cuda:1"):
+    if "sorting" in task:
+        #if task == "sorting_2_boxes":
+        #data_directory.replace("_2_boxes","")
+        state_files = np.load(sim_framework_path("/home/ito/d3il/environments/dataset/data/sorting/2_boxes_train_files.pkl"), allow_pickle=True)
+    else:
+        state_files = np.load(sim_framework_path(data_directory), allow_pickle=True)
+    joint_path = path + "all_data"
     bp_cam_imgs = []
-    robot_joint_state_list = [] 
+    robot_joint_state_list = []
+    
+    print("len(path)",len(path))
+    print("data_directory",data_directory)
+    print("len(state_files)",len(state_files))
+    #print("state files",state_files)
 
     for file in tqdm(state_files[:data_volume]):
-        with open(os.path.join(path, 'state', file), 'rb') as f:
-            env_state = pickle.load(f)
+        file_name = os.path.basename(file).split('.')[0]
+        if file_name in ["env_1038_00","env_1179_00","env_1276_00","env_0268_00"]:
+            #なぜか欠けてる?該当データ存在しない
+            continue
 
+        if task == "aligning":
+            bp_imgs = glob.glob(joint_path+ '/images/bp-cam/' + file_name + '/*')
+            with open(os.path.join(joint_path, 'state', file), 'rb') as f:
+                env_state = pickle.load(f)
+
+        elif task == "stacking":
+            
+            if "eval" in data_directory:
+                #print(file_name)
+                bp_imgs = glob.glob(path+ '/vision_data/images/bp-cam/' + file_name + '/*')
+                with open(os.path.join(path, 'all_data', file), 'rb') as f:
+                    env_state = pickle.load(f)
+            else:
+                bp_imgs = glob.glob(path+ '/vision_data/images/bp-cam/' + file_name + '/*')
+                with open(os.path.join(path, 'vision_data/state', file), 'rb') as f:
+                    env_state = pickle.load(f)
+
+        elif "sorting" in task:
+            path = "/home/ito/d3il/environments/dataset/data/sorting/"
+            if "2" in task:
+                bp_imgs = glob.glob(path+ '/2_boxes/images/bp-cam/' + file_name + '/*')
+                with open(os.path.join(path, '2_boxes/state', file), 'rb') as f:
+                    env_state = pickle.load(f)
+            elif "4" in task:
+                
+                file_name = list(file_name)
+                file_name.insert(-6,("0"))
+                file_name = "".join(file_name)
+                #print("bp_imgs",path+ '/4_boxes/images/bp-cam/' + file_name + '/*')
+                bp_imgs = glob.glob(path+ '/4_boxes/images/bp-cam/' + file_name + '/*')
+                
+                
+                with open(os.path.join(path, '4_boxes/state', file_name + ".pkl",), 'rb') as f:
+                    env_state = pickle.load(f)
+            elif "6" in task:
+                #print("file_name",file_name)
+                if "268" in file_name:
+                    continue
+                file_name = list(file_name)
+                file_name.insert(-6,("0"))
+                file_name = "".join(file_name)
+                bp_imgs = glob.glob(path+ '/6_boxes/images/bp-cam/' + file_name + '/*')
+                with open(os.path.join(path, '6_boxes/state', file_name+".pkl"), 'rb') as f:
+                    env_state = pickle.load(f)
+        
         #関節角度追加
         robot_joint_state = torch.from_numpy(env_state['robot']['j_pos'])
         robot_joint_state_list.append(robot_joint_state)
 
-        file_name = os.path.basename(file).split('.')[0]
 
         bp_images = []
-        bp_imgs = glob.glob(path+ '/images/bp-cam/' + file_name + '/*')
         
         #assert False
         bp_imgs.sort(key=lambda x: int(os.path.basename(x).split('.')[0]))
@@ -42,6 +97,8 @@ def make_data(path,data_directory,data_volume,device = "cuda:1"):
 
         bp_images = torch.concatenate(bp_images, dim=0)
         bp_cam_imgs.append(bp_images)
+
+    #print(bp_imgs)
 
     #長さが違うので0padding
     a = nn.utils.rnn.pack_sequence(bp_cam_imgs, enforce_sorted=False)
