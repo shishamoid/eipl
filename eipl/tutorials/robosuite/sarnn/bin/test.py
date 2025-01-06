@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--filename", type=str, default=None)
 parser.add_argument("--idx", type=int, default=0)
 parser.add_argument("--task", type=str)
+parser.add_argument("--initial_position",type=int)
 args = parser.parse_args()
 
 # restore parameters
@@ -41,10 +42,11 @@ path="/home/ito/d3il/environments/dataset/data/{}/".format(task)
 device = "cuda:0"
 #device = "cpu"
 #images,joints = make_data(path,path+"eval_files.pkl",100,device=device)
-images_1,joints_1 = make_data(path,path+"eval_files.pkl",20,task,device=device)
+images_1,joints_1 = make_data(path,path+"eval_files.pkl",100,task,device=device)
 
-images = images_1[1]
-joints = joints_1[1]
+initial_position = args.initial_position
+images = images_1[initial_position]
+joints = joints_1[initial_position]
 
 # define model
 model = SARNN(
@@ -85,7 +87,7 @@ check_flag = True
 for i in range(len(images)):
     check_flag = all(list(itertools.chain(*map(itertools.chain,*torch.eq(images[i],check).tolist()))))
     if check_flag:
-        end_step = i-1
+        end_step = i-2
         break
 
 for loop_ct in range(start,last):
@@ -165,7 +167,7 @@ print("end_step",end_step)
 
 ani = anim.FuncAnimation(fig, anim_update, interval=int(np.ceil(end_step / 1000)), frames=end_step)
 #print(ani.shape)
-ani.save("./output/SARNN_{}_{}_{}.gif".format(task,params["tag"], idx))
+ani.save("./output_13/SARNN_{}_{}_{}.gif".format(task,params["tag"], idx))
 
 # If an error occurs in generating the gif animation, change the writer (imagemagick/ffmpeg).
 # ani.save("./output/SARNN_{}_{}_{}.gif".format(params["tag"], idx, args.input_param), writer="ffmpeg")
